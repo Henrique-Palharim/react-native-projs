@@ -1,0 +1,17 @@
+npx create-expo-app@latest nome-do-seu-app
+
+npx expo start
+
+npm run reset-project
+
+npx expo install expo-font
+
+npx expo install expo-image
+
+/* --------------- GIT --------------- */
+git init
+git remote add origin URL_DO_REPOSITORIO
+git branch -M main
+git add .
+git commit -m "novo início"
+git push -u origin main
