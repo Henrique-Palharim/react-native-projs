@@ -1,3 +1,9 @@
+/*
+  VISÃO GERAL
+  Esta página simula uma batalha entre dois pokémon (player e inimigo) com atributos dinâmicos:
+  HP, Turnos, Ataques, Mensagens de batalha, Vitória/derrota
+*/
+
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Text, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
@@ -18,22 +24,21 @@ const moves = [
 
 // ─── Barra de HP ─────────────────────────────────────────────
 function HPBar({ current, max }: { current: number; max: number }) {
-  const pct = current / max;
-  const color = pct > 0.5 ? "#58C840" : pct > 0.25 ? "#F8D030" : "#F83030";
+  const percent = current / max;
+  const color = percent > 0.5 ? "#58C840" : percent > 0.25 ? "#F8D030" : "#F83030";
 
   return (
     <View style={styles.hpTrack}>
       <View
         style={[
           styles.hpFill,
-          { width: `${pct * 100}%`, backgroundColor: color },
+          { width: `${percent * 100}%`, backgroundColor: color },
         ]}
       />
     </View>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────
 export default function BattleScreen() {
   const [playerHP, setPlayerHP] = React.useState(MAX_HP);
   const [enemyHP, setEnemyHP] = React.useState(MAX_HP);
@@ -112,7 +117,7 @@ export default function BattleScreen() {
 
   return (
     <LinearGradient colors={["#FAE6C9", "#ebcea2", "#D1AD72"]} style={styles.container}>
-      {/* Enemy */}
+      {/* Inimigo */}
       <View style={styles.card}>
         <Text style={styles.name}>
           {ENEMY_NAME} Lv{ENEMY_LEVEL}
@@ -134,10 +139,10 @@ export default function BattleScreen() {
         </Text>
       </View>
 
-      {/* Dialog */}
+      {/* Mensagens */}
       <Text style={styles.dialog}>{dialogText}</Text>
 
-      {/* Moves */}
+      {/* Movimentos */}
       <View style={styles.moves}>
         {moves.map((move) => (
           <TouchableOpacity

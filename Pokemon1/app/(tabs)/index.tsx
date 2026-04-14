@@ -6,7 +6,7 @@ import ImageViewer from "@/components/ImageViewer";
 
 const PlaceholderImage = require("../../assets/images/pokemons/mimikyu.jpg");
 
-// Dados centralizados
+// ─── Dados ─────────────────────────────────────────────────
 const POKEMON_DATA = {
   name: "Mimikyu",
   types: ["Ghost", "Fairy"],
@@ -14,7 +14,6 @@ const POKEMON_DATA = {
   moves: ["Shadow Claw", "Play Rough", "Shadow Sneak", "Swords Dance"]
 };
 
-// Interface para garantir que o TypeScript não reclame dos tipos
 interface InfoRowProps {
   label: string;
   value: string;
@@ -46,7 +45,7 @@ export default function Index() {
             flexDirection: isMobile ? "column" : "row",
             gap: isMobile ? 40 : 60 
           }
-        ]}>
+          ]}>
           
           {/* Coluna da Imagem */}
           <View style={styles.imageSection}>

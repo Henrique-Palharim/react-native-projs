@@ -1,6 +1,6 @@
 import { StyleSheet, View, Pressable, Text, StyleProp, ViewStyle } from "react-native";
 
-// 1. Definimos os temas disponíveis e suas cores
+// Definindo os temas disponíveis e suas cores
 const THEMES = {
   primary: { bg: "#FE9C51", text: "black", width: 220, height: 58 },
   ghost:   { bg: "#5269AD", text: "#fff",  width: 100, height: 40 },
@@ -8,7 +8,7 @@ const THEMES = {
   default: { bg: "#f5ff6b", text: "black", width: 220, height: 58 },
 };
 
-// 2. Tipagem mais flexível
+// Declarando os tipos de botões
 type ThemeType = "primary" | "ghost" | "fairy";
 
 type Props = {
@@ -19,7 +19,7 @@ type Props = {
 }
 
 export default function Button({ label, theme, onPress, style: customStyle }: Props) {
-  // Busca a configuração do tema ou usa o default
+  // configura o tema escolhido ou usa o default
   const config = theme ? THEMES[theme] : THEMES.default;
 
   return (
