@@ -1,18 +1,18 @@
-import { Tabs } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
+import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabLayout() {
 
   const insets = useSafeAreaInsets();
 
-  const [fontsLoaded] = useFonts({
+  const [fontesCarregadas] = useFonts({
     PokemonHollow: require("../../assets/fonts/PokemonHollow.ttf"),
     PokemonSolid: require("../../assets/fonts/PokemonSolid.ttf"),
   });
 
-  if (!fontsLoaded) {
+  if (!fontesCarregadas) {
     return null;
   }
 
@@ -71,7 +71,7 @@ export default function TabLayout() {
 
       <Tabs.Screen 
         name="toDoList" 
-        options={{ title: "Lista",tabBarIcon: ({ color, focused }) => (
+        options={{ title: "Pokédex",tabBarIcon: ({ color, focused }) => (
             <Ionicons 
               name={focused ? "checkbox" : "checkbox-outline"} color={color} size={24} />
           ),

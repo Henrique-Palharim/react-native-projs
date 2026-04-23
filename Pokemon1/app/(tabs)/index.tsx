@@ -7,14 +7,14 @@ import ImageViewer from "@/components/ImageViewer";
 const PlaceholderImage = require("../../assets/images/pokemons/mimikyu.jpg");
 
 // ─── Dados ─────────────────────────────────────────────────
-const POKEMON_DATA = {
+const POKEMON_DADOS = {
   name: "Mimikyu",
   types: ["Ghost", "Fairy"],
   tier: "RU",
   moves: ["Shadow Claw", "Play Rough", "Shadow Sneak", "Swords Dance"]
 };
 
-interface InfoRowProps {
+interface InfoLinhasPropriedades {
   label: string;
   value: string;
   isMove?: boolean;
@@ -25,7 +25,7 @@ export default function Index() {
   const isMobile = width < 768;
 
   // Subcomponente interno para as linhas de informação
-  const InfoRow = ({ label, value, isMove = false }: InfoRowProps) => (
+  const LinhasPropriedades = ({ label, value, isMove = false }: InfoLinhasPropriedades) => (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}:</Text>
       <Text style={[styles.text, styles.textBlue, isMove && { marginBottom: 2 }]}>
@@ -38,7 +38,7 @@ export default function Index() {
     <LinearGradient colors={["#FAE6C9", "#ebcea2", "#D1AD72"]} style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        {/* O 'gap' é para que o espaço entre os itens não os desloque do centro */}
+        {/* o 'gap' é para que o espaço entre os itens não os desloque do centro */}
         <View style={[
           styles.layoutWrapper, 
           { 
@@ -57,11 +57,11 @@ export default function Index() {
 
           {/* Coluna de Conteúdo */}
           <View style={styles.contentSection}>
-            <Text style={styles.title}>{POKEMON_DATA.name}</Text>
+            <Text style={styles.title}>{POKEMON_DADOS.name}</Text>
 
             <View style={styles.typeRow}>
               <Text style={styles.infoLabel}>Type: </Text>
-              {POKEMON_DATA.types.map((type, index) => (
+              {POKEMON_DADOS.types.map((type, index) => (
                 <Button 
                   key={type} 
                   theme={type.toLowerCase() as "ghost" | "fairy" | "primary"}
@@ -71,11 +71,10 @@ export default function Index() {
               ))}
             </View>
 
-            <InfoRow label="Tier" value={POKEMON_DATA.tier} />
-
-            {/* Renderização dinâmica dos moves */}
-            {POKEMON_DATA.moves.map((move, index) => (
-              <InfoRow key={move} label={`Move${index + 1}`} value={move} isMove />
+            <LinhasPropriedades label="Tier" value={POKEMON_DADOS.tier} />
+              
+            {POKEMON_DADOS.moves.map((move, index) => (
+              <LinhasPropriedades key={move} label={`Move${index + 1}`} value={move} isMove />
             ))}
           </View>
 

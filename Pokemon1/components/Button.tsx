@@ -9,16 +9,16 @@ const THEMES = {
 };
 
 // Declarando os tipos de botões
-type ThemeType = "primary" | "ghost" | "fairy";
+type TipoDoTema = "primary" | "ghost" | "fairy";
 
-type Props = {
+type Propriedades = {
   label: string;
-  theme?: ThemeType;
+  theme?: TipoDoTema;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
 
-export default function Button({ label, theme, onPress, style: customStyle }: Props) {
+export default function Button({ label, theme, onPress, style: customStyle }: Propriedades) {
   // configura o tema escolhido ou usa o default
   const config = theme ? THEMES[theme] : THEMES.default;
 

@@ -42,7 +42,7 @@ export default function App() {
       colors={["#FAE6C9", "#ebcea2", "#D1AD72"]}
     >
 
-      <Text style={styles.titulo}>Lista de Tarefas</Text>
+      <Text style={styles.titulo}>Pokémons</Text>
 
       {/* INPUT */}
       <View style={styles.inputContainer}>
