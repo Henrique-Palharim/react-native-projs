@@ -10,6 +10,7 @@ export default function ImageViewer({ imgSource, style }: Props) {
     return (
         <Image 
          source={imgSource} 
+         contentFit="contain"
          style={styles.image}
         />
     ) 
@@ -18,8 +19,8 @@ export default function ImageViewer({ imgSource, style }: Props) {
 const styles = StyleSheet.create({
     image: {
         width: 320,
-        height: 440,
-        borderWidth: 15,
-        borderColor: "white"
+        height: 320,
+        // borderWidth: 15,
+        // borderColor: "white"
     },
 });

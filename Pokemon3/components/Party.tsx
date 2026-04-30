@@ -3,14 +3,20 @@ import { StyleSheet, Image, View, Pressable } from "react-native";
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-type PartySlot = { id: string; image: any | null };
+// 1. ATUALIZADO: Agora o slot aceita a propriedade pokemon (opcional)
+export type PartySlot = { 
+  id: string; 
+  image: any | null;
+  pokemon: any | null; // Mude de 'pokemon?: any' para 'pokemon: any | null'
+};
 
 const SIZE = 100;
 
 type Props = {
   team: PartySlot[];
   onSetTeam: (newTeam: PartySlot[]) => void;
-  onSelect: (pokemon: any, index: number) => void;
+  // 2. ATUALIZADO: Agora o onSelect envia o objeto PartySlot inteiro
+  onSelect: (item: PartySlot, index: number) => void; 
   selectedIndex: number | null;
 };
 
@@ -23,10 +29,10 @@ export default function Party({ team, onSetTeam, onSelect, selectedIndex }: Prop
     return (
       <ScaleDecorator>
         <Pressable
-          // onLongPress agora inicia o drag instantaneamente
           onLongPress={drag} 
-          delayLongPress={100} // Torna o reconhecimento do "segurar" muito mais rápido (padrão é 500ms)
-          onPress={() => item.image && onSelect(item.image, index!)}
+          delayLongPress={100} 
+          // 3. ATUALIZADO: Enviamos o 'item' (slot) completo, não só a imagem
+          onPress={() => item.image && onSelect(item, index!)} 
           style={[
             styles.slot,
             isSelected && styles.selectedSlot,
@@ -48,12 +54,11 @@ export default function Party({ team, onSetTeam, onSelect, selectedIndex }: Prop
       <DraggableFlatList
         data={team}
         onDragEnd={({ data }) => onSetTeam(data)}
-        keyExtractor={(item) => item.id} // ID fixo é essencial para a troca funcionar
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         horizontal
-        activationDistance={5} // Distância mínima de movimento para começar a arrastar
+        activationDistance={5}
         contentContainerStyle={styles.row}
-        // Isso impede que o ScrollView da página "mate" o movimento lateral
         simultaneousHandlers={[]} 
       />
     </GestureHandlerRootView>
@@ -61,39 +66,11 @@ export default function Party({ team, onSetTeam, onSelect, selectedIndex }: Prop
 }
 
 const styles = StyleSheet.create({
-  container: {
-    height: 120,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  row: {
-    gap: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  slot: {
-    width: SIZE,
-    height: SIZE,
-    borderRadius: SIZE / 2,
-    borderWidth: 2,
-    borderColor: "#fff",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    overflow: "hidden",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  empty: {
-    flex: 1,
-  },
-  selectedSlot: {
-    borderColor: "#2E78D6",
-    borderWidth: 4,
-  },
-  activeSlot: {
-    opacity: 0.7,
-    borderColor: "#FFD700",
-  },
+  container: { height: 120, width: '100%', alignItems: 'center', justifyContent: 'center' },
+  row: { gap: 12, paddingHorizontal: 20, alignItems: 'center' },
+  slot: { width: SIZE, height: SIZE, borderRadius: SIZE / 2, borderWidth: 2, borderColor: "#fff", backgroundColor: "rgba(255,255,255,0.2)", overflow: "hidden" },
+  image: { width: "100%", height: "100%" },
+  empty: { flex: 1 },
+  selectedSlot: { borderColor: "#2E78D6", borderWidth: 4 },
+  activeSlot: { opacity: 0.7, borderColor: "#FFD700" },
 });

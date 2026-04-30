@@ -7,7 +7,7 @@ const THEMES = {
   dragon:   { bg: "#5127B6", text: "#fff",  width: 100, height: 40 },
   electric: { bg: "#B79925", text: "#fff",  width: 100, height: 40 },
   fairy:    { bg: "#B64CBC", text: "#fff",  width: 100, height: 40 },
-  fight:    { bg: "#892924", text: "#fff",  width: 100, height: 40 },
+  fighting: { bg: "#892924", text: "#fff",  width: 100, height: 40 },
   fire:     { bg: "#AB5A1F", text: "#fff", width: 100, height: 40 },
   flying:   { bg: "#796AA6", text: "#fff",  width: 100, height: 40 },
   grass:    { bg: "#578F3C", text: "#fff",  width: 100, height: 40 },
@@ -23,7 +23,7 @@ const THEMES = {
 };
 
 // Declarando os tipos de botões
-type TipoDoTema = "bug" | "dark" | "dragon" | "electric" | "fairy" | "fight" | 
+type TipoDoTema = "bug" | "dark" | "dragon" | "electric" | "fairy" | "fighting" | 
                   "fire" | "flying" | "grass" | "ghost" | "ground" | "ice" | 
                   "normal" | "rock" | "poison" | "psychic" | "steel" | "water";
 
@@ -31,6 +31,10 @@ type Propriedades = {
   label: string;
   theme: TipoDoTema;
   style?: StyleProp<ViewStyle>;
+}
+
+function capitalize(text: string = "") {
+  return text ? text[0].toUpperCase() + text.slice(1) : "";
 }
 
 export default function Type({ label, theme, style: customStyle }: Propriedades) {
@@ -47,7 +51,7 @@ export default function Type({ label, theme, style: customStyle }: Propriedades)
     >
       <View style={[styles.type, { backgroundColor: config.bg }]}>
         <Text style={[styles.typeLabel, { color: config.text }]}>
-          {label}
+          {capitalize(label)}
         </Text>
       </View>
     </View>
