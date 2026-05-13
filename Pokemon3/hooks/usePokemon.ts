@@ -15,15 +15,12 @@ export function usePokemon() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [allPossibleMoves, setAllPossibleMoves] = useState<any[]>([]);
 
-  // --- NOVOS ESTADOS PARA O MODAL ---
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
-  // ----------------------------------
   
   const [selectedPokemon, setSelectedPokemon] = useState<PokemonData>({
     name: "Pesquise um Pokémon",
     types: [],
-    // Agora inicializamos como objetos para respeitar a nova tipagem
     moves: [
         { name: "-" },
         { name: "-" },
@@ -32,6 +29,24 @@ export function usePokemon() {
     ],
     image: null,
   });
+
+  // --- FUNÇÃO DE RESET (NOVO) ---
+  const resetSelectedPokemon = () => {
+    setSelectedPokemon({
+      name: "Pesquise um Pokémon",
+      types: [],
+      moves: [
+          { name: "-" },
+          { name: "-" },
+          { name: "-" },
+          { name: "-" }
+      ],
+      image: null,
+    });
+    setSearchQuery(""); 
+    setAllPossibleMoves([]);
+  };
+  // ------------------------------
 
   useEffect(() => {
     const fetchAllNames = async () => {
@@ -58,8 +73,6 @@ export function usePokemon() {
       
       const data = await response.json();
 
-      // MUDANÇA: Em vez de pegar os 4 primeiros, iniciamos os slots vazios
-      // mas mantemos o nome como "-" ou "Empty" para o usuário saber que deve clicar
       const emptyMoves = [
         { name: "Select move..." },
         { name: "Select move..." },
@@ -95,9 +108,8 @@ export function usePokemon() {
     }
   };
 
-  // --- NOVAS FUNÇÕES PARA O MODAL ---
   const openMovePicker = (slotIndex: number) => {
-    if (allPossibleMoves.length === 0) return; // Só abre se houver pokemon carregado
+    if (allPossibleMoves.length === 0) return; 
     setActiveSlot(slotIndex);
     setIsModalVisible(true);
   };
@@ -106,7 +118,6 @@ export function usePokemon() {
     if (activeSlot === null) return;
     
     try {
-        // 2. Busca os detalhes do movimento para descobrir o tipo
         const response = await fetch(`https://pokeapi.co/api/v2/move/${moveName}`);
         const data = await response.json();
         const moveType = data.type.name;
@@ -116,28 +127,27 @@ export function usePokemon() {
         
         setSelectedPokemon({ ...selectedPokemon, moves: newMoves });
     } catch (e) {
-        // Se der erro na busca do tipo, salva pelo menos o nome
         const newMoves = [...selectedPokemon.moves];
         newMoves[activeSlot] = { name: moveName };
         setSelectedPokemon({ ...selectedPokemon, moves: newMoves });
     } finally {
         setIsModalVisible(false);
     }
-    };
-  // ----------------------------------
+  };
 
   return {
     loading,
     searchQuery,
     suggestions,
     selectedPokemon,
-    allPossibleMoves, // Retornamos a lista completa para o Modal usar
-    isModalVisible,   // Para o Index saber se mostra o modal
+    allPossibleMoves,
+    isModalVisible,
     setIsModalVisible,
     handleSearch,
     onTypeSearch,
-    openMovePicker,   // Usaremos no clique do slot de move 
-    selectMove,        // Usaremos quando o usuário clicar no move dentro do modal
-    setSelectedPokemon
+    openMovePicker,
+    selectMove,
+    setSelectedPokemon,
+    resetSelectedPokemon // <--- ADICIONADO NO RETURN (NOVO)
   };
 }
