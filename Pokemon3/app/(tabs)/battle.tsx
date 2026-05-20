@@ -5,8 +5,10 @@
 */
 
 import { LinearGradient } from "expo-linear-gradient";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Text, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import { useIsFocused } from '@react-navigation/native'; 
 
 // ─── Dados ─────────────────────────────────────────────────
 const PLAYER_NOME = "MIMIKYU";
@@ -39,13 +41,60 @@ function HPBarra({ current, max }: { current: number; max: number }) {
   );
 }
 
+// ─── COMPONENTE POKÉBOLA EM CSS REAL ─────────────────────────
+function Pokebola({ ativa }: { ativa: boolean }) {
+  return (
+    <View style={[styles.pokeball, { borderColor: '#333' }]}>
+      {/* metade de cima: vermelha se tiver pokemon, cinza escuro se vazio */}
+      <View style={[styles.pokeballTop, { backgroundColor: ativa ? '#FF1C1C' : '#bcbcbc' }]} />
+      {/* linha central preta */}
+      <View style={styles.pokeballCenterLine} />
+      {/* metade de baixo: sempre branca/clarinha */}
+      <View style={[styles.pokeballBottom, { backgroundColor: ativa ? '#FFFFFF' : '#e0e0e0' }]} />
+      {/* botão central da pokébola */}
+      <View style={styles.pokeballButtonOuter}>
+        <View style={[styles.pokeballButtonInner, { backgroundColor: ativa ? '#FFF' : '#bcbcbc' }]} />
+      </View>
+    </View>
+  );
+}
+
 export default function TelaBatalha() {
+  const isFocused = useIsFocused(); 
+  const [activeCount, setActiveCount] = useState(0); 
+
   const [playerHP, setPlayerHP] = React.useState(VIDA_MAX);
   const [enemyHP, setEnemyHP] = React.useState(VIDA_MAX);
   const [dialogText, setDialogText] = React.useState(
     `O que ${PLAYER_NOME} fará?`
   );
   const [isPlayerTurn, setIsPlayerTurn] = React.useState(true);
+
+  // --- busca a party salva ---
+  useEffect(() => {
+    const loadParty = async () => {
+      try {
+        const jsonValue = await AsyncStorage.getItem('@pokemon_party');
+        if (jsonValue != null) {
+          const savedParty = JSON.parse(jsonValue);
+          
+          // conta quantos slots possuem um pokémon
+          let count = 0;
+          if (Array.isArray(savedParty)) {
+            count = savedParty.filter(slot => slot && slot.pokemon !== null).length;
+          }
+
+          setActiveCount(Math.min(6, count));
+        }
+      } catch (e) {
+        console.error("Erro ao ler party no battle", e);
+      }
+    };
+
+    if (isFocused) {
+      loadParty();
+    }
+  }, [isFocused]);
 
   const resetarJogo = () => {
     setPlayerHP(VIDA_MAX);
@@ -78,7 +127,6 @@ export default function TelaBatalha() {
   const ataque = (move: typeof moves[0]) => {
     if (!isPlayerTurn) return;
 
-    // Buff
     if (move.name === "Swords Dance") {
       setDialogText(`${PLAYER_NOME} aumentou o ataque!`);
       setTimeout(() => {
@@ -88,7 +136,6 @@ export default function TelaBatalha() {
     }
 
     setIsPlayerTurn(false);
-
     const dano = Math.floor(move.power * (0.8 + Math.random() * 0.4));
     const novoHpOponente = Math.max(0, enemyHP - dano);
 
@@ -107,7 +154,6 @@ export default function TelaBatalha() {
         return;
       }
 
-      // Turno do inimigo
       setDialogText(`${OPONENTE_NOME} atacando...`);
       setTimeout(() => {
         AtaqueInimigo(playerHP);
@@ -115,9 +161,21 @@ export default function TelaBatalha() {
     }, 600);
   };
 
+  // array fixo de 6 posições para os 6 slots do time
+  const totalSlots = [1, 2, 3, 4, 5, 6];
+
   return (
     <LinearGradient colors={["#FAE6C9", "#ebcea2", "#D1AD72"]} style={styles.container}>
-      {/* Oponente */}
+      
+      {/* BARRA DE POKÉBOLAS REAIS NO TOPO */}
+      <View style={styles.partyIndicator}>
+        {totalSlots.map((slot, index) => {
+          const hasPokemon = index < activeCount; 
+          return <Pokebola key={slot} ativa={hasPokemon} />;
+        })}
+      </View>
+
+      {/* oponente */}
       <View style={styles.card}>
         <Text style={styles.name}>
           {OPONENTE_NOME} Lv{OPONENTE_LEVEL}
@@ -128,7 +186,7 @@ export default function TelaBatalha() {
         </Text>
       </View>
 
-      {/* Player */}
+      {/* player */}
       <View style={styles.card}>
         <Text style={styles.name}>
           {PLAYER_NOME} Lv{PLAYER_LEVEL}
@@ -139,10 +197,10 @@ export default function TelaBatalha() {
         </Text>
       </View>
 
-      {/* Mensagens */}
+      {/* mensagens */}
       <Text style={styles.dialog}>{dialogText}</Text>
 
-      {/* Movimentos */}
+      {/* movimentos */}
       <View style={styles.moves}>
         {moves.map((move) => (
           <TouchableOpacity
@@ -171,8 +229,63 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     justifyContent: "space-around",
-    backgroundColor: "#fff",
   },
+  partyIndicator: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255,255,255,0.4)",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 10,
+    alignSelf: "center",
+  },
+
+  // --- Estilos Visuais da Pokebola ---
+  pokeball: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#fff',
+  },
+  pokeballTop: {
+    flex: 1,
+    width: '100%',
+  },
+  pokeballCenterLine: {
+    height: 2,
+    backgroundColor: '#333',
+    width: '100%',
+  },
+  pokeballBottom: {
+    flex: 1,
+    width: '100%',
+  },
+  pokeballButtonOuter: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#333',
+    transform: [{ translateX: -6 }, { translateY: -6 }],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pokeballButtonInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  // ----------------------------------------
 
   card: {
     padding: 10,
@@ -181,30 +294,25 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "#fff",
   },
-
   name: {
     fontWeight: "bold",
     marginBottom: 5,
   },
-
   hpText: {
     marginTop: 4,
     textAlign: "right",
   },
-
   dialog: {
     textAlign: "center",
     fontSize: 16,
     marginVertical: 20,
   },
-
   moves: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
     justifyContent: "center",
   },
-
   button: {
     padding: 12,
     backgroundColor: "#2E78D6",
@@ -216,29 +324,26 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
   },
-
   hpTrack: {
     height: 6,
     backgroundColor: "#333",
     borderRadius: 3,
     overflow: "hidden",
   },
-
   hpFill: {
     height: "100%",
   },
   resetButton: {
-  marginTop: 10,
-  padding: 12,
-  backgroundColor: "#ffdddd",
-  borderRadius: 6,
-  alignItems: "center",
-  borderWidth: 1,
-  borderColor: "#cc0000",
-},
-
-resetText: {
-  color: "#cc0000",
-  fontWeight: "bold",
-},
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: "#ffdddd",
+    borderRadius: 6,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#cc0000",
+  },
+  resetText: {
+    color: "#cc0000",
+    fontWeight: "bold",
+  },
 });

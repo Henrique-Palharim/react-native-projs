@@ -9,7 +9,7 @@ export default function ImageTest() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const pickImage = async () => {
-    // Solicita permissão para acessar a galeria
+    // solicita permissão para acessar a galeria
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
@@ -17,17 +17,15 @@ export default function ImageTest() {
       return;
     }
 
-    // Criamos o objeto de opções separadamente
     const options = {
       mediaTypes: ['images'], 
       allowsEditing: true,    
       aspect: [1, 1],         
       quality: 1,  
-      theme: 'dark', // Isso melhora a visibilidade das cores nativas
-      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN, // Força tela cheia (ajuda no contraste)
+      theme: 'automatic',
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
     };
 
-    // Usamos 'as any' para o TypeScript ignorar a trava de tipo e aceitar a propriedade 'theme'
     const result = await ImagePicker.launchImageLibraryAsync(options as any);
 
     if (!result.canceled) {

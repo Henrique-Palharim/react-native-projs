@@ -12,6 +12,9 @@ import Party from "@/components/Party";
 import MovePickerModal from "@/components/MovePickerModal";
 import Button from "@/components/Button";
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from "react"; // Garanta que o useEffect está importado do React
+
 export default function Index() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -39,6 +42,17 @@ export default function Index() {
       pokemon: null
     }))
   );
+
+  useEffect(() => {
+    const savePartyToStorage = async () => {
+      try {
+        await AsyncStorage.setItem('@pokemon_party', JSON.stringify(party));
+      } catch (e) {
+        console.error("Erro ao salvar party no AsyncStorage", e);
+      }
+    };
+    savePartyToStorage();
+  }, [party]);
   
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
