@@ -31,14 +31,14 @@ export default function PokemonInfo({ pokemon, onMoveChange, children }: Pokemon
             <Text style={styles.slotLabel}>Move {index + 1}:</Text>
             
             <TouchableOpacity 
-                style={[styles.infoRow, isEmpty && { opacity: 0.9 }]} // Fica mais clarinho se estiver vazio
+                style={[styles.infoRow, isEmpty && { opacity: 0.9 }]}
                 onPress={() => onMoveChange(index)}
             >
                 <Text style={[styles.text, isEmpty ? { color: '#a3a3a3ff' } : styles.textBlue]}>
                 {moveObj.name.replace(/-/g, ' ')}
                 </Text>
                 
-                {/* Só exibe o Type se ele existir no objeto */}
+                {/* só exibe o Type se ele existir no objeto */}
                 {!isEmpty && moveObj.type && (
                 <Type 
                     theme={moveObj.type as any} 
@@ -47,7 +47,7 @@ export default function PokemonInfo({ pokemon, onMoveChange, children }: Pokemon
                 />
                 )}
 
-                {/* Se estiver vazio, podemos colocar um ícone de "+" bem discreto */}
+                {/* se estiver vazio, exibe um ícone de "+" discreto */}
                 {isEmpty && <Ionicons name="add" size={20} color="#bbb" />}
             </TouchableOpacity>
             </View>
@@ -65,26 +65,24 @@ const styles = StyleSheet.create({
   text: { fontWeight: "bold", fontSize: 20, color: "#ffffff", textTransform: 'capitalize' },
   textBlue: { color: "#2E78D6" },
   
-  // Container para agrupar o Label e o Bloco
   moveContainer: { 
     width: '100%', 
     marginBottom: 15 
   },
   
-  // Estilo do Slot X (agora fora)
   slotLabel: { 
     fontWeight: "bold", 
     fontSize: 18, 
     color: "#ffffff", 
     marginBottom: 5,
-    opacity: 0.8 // Um pouco mais discreto
+    opacity: 0.8
   },
   
   // O Bloco clicável
   infoRow: { 
     flexDirection: "row", 
     alignItems: "center", 
-    justifyContent: "space-between", // Nome na esquerda, Tipo na direita
+    justifyContent: "space-between",
     backgroundColor: 'rgba(255,255,255,0.15)', 
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -97,7 +95,6 @@ const styles = StyleSheet.create({
   infoLabel: { fontWeight: "bold", fontSize: 20, color: "#ffffff", marginRight: 10 },
   typeRow: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   
-  // Ajuste para a tag de tipo não ficar gigante no slot
   typeScale: { 
     transform: [{ scale: 0.85 }],
     marginHorizontal: 0 

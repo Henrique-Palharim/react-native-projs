@@ -30,7 +30,7 @@ export function usePokemon() {
     image: null,
   });
 
-  // --- FUNÇÃO DE RESET (NOVO) ---
+  // --- função de reset ---
   const resetSelectedPokemon = () => {
     setSelectedPokemon({
       name: "Pesquise um Pokémon",
@@ -148,6 +148,6 @@ export function usePokemon() {
     openMovePicker,
     selectMove,
     setSelectedPokemon,
-    resetSelectedPokemon // <--- ADICIONADO NO RETURN (NOVO)
+    resetSelectedPokemon
   };
 }

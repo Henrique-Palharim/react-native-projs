@@ -17,8 +17,7 @@ type Props = {
 export default function Party({ team, onSelect, selectedIndex }: Props) {
   const { width } = useWindowDimensions();
   
-  // Cálculo dinâmico para as bolinhas ocuparem bem o espaço
-  // Pegamos a largura da tela, tiramos o padding e dividimos por 3
+  // cálculo para a party ocupar o espaço corretamente
   const PADDING = 40;
   const GAP = 15;
   const SLOT_SIZE = (width - PADDING - (GAP * 2)) / 3;
@@ -60,7 +59,7 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: "row",
-    flexWrap: "wrap", // <--- O SEGREDO: Isso faz as bolinhas "caírem" para a linha de baixo
+    flexWrap: "wrap",
     justifyContent: "center",
     gap: 15,
   },

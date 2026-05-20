@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-// Importando o seu componente de botão
 import Button from '@/components/Button'; 
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function Teste() {
+export default function ImageTest() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const pickImage = async () => {
@@ -18,13 +17,18 @@ export default function Teste() {
       return;
     }
 
-    // Abre a galeria de imagens
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], // Apenas imagens
-      allowsEditing: true,    // Permite cortar a imagem
-      aspect: [1, 1],         // Força um quadrado (bom para o estilo de Pokémon)
-      quality: 1,             // Qualidade máxima
-    });
+    // Criamos o objeto de opções separadamente
+    const options = {
+      mediaTypes: ['images'], 
+      allowsEditing: true,    
+      aspect: [1, 1],         
+      quality: 1,  
+      theme: 'dark', // Isso melhora a visibilidade das cores nativas
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN, // Força tela cheia (ajuda no contraste)
+    };
+
+    // Usamos 'as any' para o TypeScript ignorar a trava de tipo e aceitar a propriedade 'theme'
+    const result = await ImagePicker.launchImageLibraryAsync(options as any);
 
     if (!result.canceled) {
       setSelectedImage(result.assets[0].uri);
@@ -62,7 +66,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAE6C9',
   },
   imageContainer: {
     marginBottom: 20,
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
   image: {
     width: 200,
     height: 200,
-    borderRadius: 100, // Deixa redondo igual à party
+    borderRadius: 100,
     borderWidth: 3,
     borderColor: '#fff',
   },

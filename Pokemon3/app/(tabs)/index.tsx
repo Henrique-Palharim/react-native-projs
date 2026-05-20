@@ -16,7 +16,6 @@ export default function Index() {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
-  // --- 1. AQUI: Adicionamos o 'setSelectedPokemon' na extração do Hook ---
   const { 
     loading, 
     searchQuery, 
@@ -30,35 +29,29 @@ export default function Index() {
     allPossibleMoves, 
     selectMove,
     resetSelectedPokemon,
-    setSelectedPokemon // <--- ESSA LINHA É NOVA
+    setSelectedPokemon
   } = usePokemon();
 
-  // --- 2. AQUI: Inicializamos a party com o campo 'pokemon' nulo ---
   const [party, setParty] = useState(
     Array(6).fill(null).map((_, i) => ({ 
       id: `${i + 1}`, 
       image: null, 
-      pokemon: null // <--- IMPORTANTE: inicializar como null
+      pokemon: null
     }))
   );
   
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  // --- 3. ATUALIZADO: Salva no slot selecionado OU no primeiro vazio ---
   function addToParty(fullPokemon: any) {
     if (!fullPokemon.image || fullPokemon.name === "Pesquise um Pokémon") return;
     
     setParty((prev) => {
       const next = [...prev];
-      
-      // LÓGICA: Se houver um slot selecionado (azul), usamos ele. 
-      // Se não, procuramos o primeiro que esteja com pokemon === null.
+
       let indexToUpdate = selectedIndex !== null 
         ? selectedIndex 
         : next.findIndex((slot) => slot.pokemon === null);
       
-      // Se a party estiver cheia e nada estiver selecionado, 
-      // indexToUpdate será -1. Nesse caso, podemos ignorar ou sobrescrever o primeiro [0].
       if (indexToUpdate === -1) indexToUpdate = 0;
       
       next[indexToUpdate] = { 
@@ -78,9 +71,9 @@ export default function Index() {
           searchQuery={searchQuery}
           onTypeSearch={onTypeSearch}
           handleSearch={(name) => {
-            // 1. Desmarca qualquer bolinha selecionada na Party
+            
             setSelectedIndex(null); 
-            // 2. Chama a busca normal do hook
+            
             handleSearch(name); 
           }}
           suggestions={suggestions}
@@ -99,20 +92,20 @@ export default function Index() {
             )}
           </View>
 
-          {/* Passamos o pokemon atual para o componente de info */}
+          {/* passando o pokemon atual para o componente de info */}
           <PokemonInfo pokemon={selectedPokemon} onMoveChange={openMovePicker}>
             <Button 
               label={selectedIndex !== null ? "Update Member" : "Add to Party"} 
               onPress={() => addToParty(selectedPokemon)} 
             />
             
-            {/* Botão New Search atualizado */}
+            {/* botão New Search */}
             {selectedIndex !== null && (
               <Button 
                 label="New Search" 
                 onPress={() => {
-                  setSelectedIndex(null);   // Tira o foco da bolinha (desmarca o azul)
-                  resetSelectedPokemon();   // Reseta a imagem para interrogação e limpa os moves
+                  setSelectedIndex(null);
+                  resetSelectedPokemon();
                 }} 
                 style={{ marginTop: 10, backgroundColor: 'rgba(255,255,255,0.2)' }}
               />
@@ -126,11 +119,11 @@ export default function Index() {
             team={party}
             onSetTeam={setParty}
             selectedIndex={selectedIndex}
-            // --- 4. AQUI: Quando clicar na party, devolve os dados para a tela principal ---
+
             onSelect={(item, index) => {
               setSelectedIndex(index);
               if (item.pokemon) {
-                setSelectedPokemon(item.pokemon); // <--- RESTAURA A MEMÓRIA
+                setSelectedPokemon(item.pokemon);
               }
             }}
           />

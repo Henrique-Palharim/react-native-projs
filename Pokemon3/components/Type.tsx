@@ -1,6 +1,6 @@
 import { StyleSheet, View, Pressable, Text, StyleProp, ViewStyle } from "react-native";
 
-// Definindo os temas disponíveis e suas cores
+// definindo os temas disponíveis e as cores
 const THEMES = {
   bug:      { bg: "#747F1E", text: "#fff",  width: 100, height: 40 },
   dark:     { bg: "#4F4036", text: "#fff",  width: 100, height: 40 },
@@ -22,7 +22,7 @@ const THEMES = {
   water:    { bg: "#4A68B2", text: "#fff",  width: 100, height: 40 }
 };
 
-// Declarando os tipos de botões
+// tipos de botões
 type TipoDoTema = "bug" | "dark" | "dragon" | "electric" | "fairy" | "fighting" | 
                   "fire" | "flying" | "grass" | "ghost" | "ground" | "ice" | 
                   "normal" | "rock" | "poison" | "psychic" | "steel" | "water";
@@ -38,7 +38,7 @@ function capitalize(text: string = "") {
 }
 
 export default function Type({ label, theme, style: customStyle }: Propriedades) {
-  // configura o tema escolhido
+  // configura de acordo com o tema escolhido
   const config = THEMES[theme];
 
   return (
