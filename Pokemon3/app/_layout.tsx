@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogBox } from "react-native";
 import { useFonts } from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 LogBox.ignoreAllLogs(true);
 
@@ -16,23 +17,22 @@ export default function RootLayout() {
     return null;
   }
 
-  return(
-
-    <>
-      <StatusBar style="light" />
+  return (
+    
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar style="dark" />
+      
       <Stack
-       screenOptions={{
-        headerStyle: { backgroundColor: "#FAE6C9" },
-        headerTitleStyle: { color: "#000000", fontFamily: "PokemonSolid", fontSize: 24 },
-        headerTintColor: "#ffffff",
-        headerShadowVisible: false,
-       }}
+        screenOptions={{
+          headerStyle: { backgroundColor: "#FAE6C9" },
+          headerTitleStyle: { color: "#000000", fontFamily: "PokemonSolid", fontSize: 24 },
+          headerTintColor: "#000000",
+          headerShadowVisible: false,
+        }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: "Ops! Esta página não foi encontrada" }} />
       </Stack>
-    </>
-
-  )
-  
+    </GestureHandlerRootView>
+  );
 }
