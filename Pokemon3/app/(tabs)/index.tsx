@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 
-// Componentes customizados
+// componentes
 import { usePokemon } from "@/hooks/usePokemon";
 import SearchBar from "@/components/SearchBar";
 import PokemonInfo from "@/components/PokemonInfo";
@@ -13,7 +13,7 @@ import MovePickerModal from "@/components/MovePickerModal";
 import Button from "@/components/Button";
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect } from "react"; // Garanta que o useEffect está importado do React
+import { useEffect } from "react";
 
 export default function Index() {
   const { width } = useWindowDimensions();

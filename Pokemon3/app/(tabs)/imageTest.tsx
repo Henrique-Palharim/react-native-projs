@@ -1,12 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Image, Alert, Text, useWindowDimensions, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, Image, Alert, Text, useWindowDimensions, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons'; 
-
-import Button from '@/components/Button'; 
-import EditableSticker from '@/components/EditableSticker'; 
+import ViewShot from 'react-native-view-shot'; 
+import { useNavigation } from 'expo-router'; 
+import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import Button from '@/components/Button'; 
+import EditableSticker from '@/components/EditableSticker';
 
 export const LOCAL_STICKERS = [
   { id: 'stk_1', source: require('../../assets/images/stickers/bullbasaur.png'), label: 'Bulbasaur' },
@@ -18,6 +21,7 @@ export const LOCAL_STICKERS = [
 ];
 
 export default function ImageTest() {
+  const navigation = useNavigation(); 
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [loading, setLoading] = useState(false);
   const [tempImage, setTempImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -28,10 +32,23 @@ export default function ImageTest() {
   const [flipY, setFlipY] = useState(false);
 
   const [activeStickers, setActiveStickers] = useState<{ id: string; source: any }[]>([]);
-
-  const scrollOffset = useRef({ x: 0, y: 0 });
-  const currentZoom = useRef(1);
   const CROP_WINDOW_SIZE = screenWidth * 0.85;
+
+  // --- NOVOS ESTADOS PARA AS DIMENSÕES DINÂMICAS DA IMAGEM ---
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  
+  const viewShotRef = useRef<any>(null);
+
+  const imageScale = useSharedValue(1);
+  const savedImageScale = useSharedValue(1);
+  const imageOffset = useSharedValue({ x: 0, y: 0 });
+  const startImageOffset = useSharedValue({ x: 0, y: 0 });
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: !tempImage, 
+    });
+  }, [tempImage, navigation]);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -47,52 +64,99 @@ export default function ImageTest() {
     });
 
     if (!result.canceled) {
+      const asset = result.assets[0];
+
+      // CÁLCULO DE PROPORÇÃO DA IMAGEM (Aspect Ratio)
+      // Faz com que o menor lado da foto preencha o tamanho do container perfeitamente.
+      const imageRatio = asset.width / asset.height;
+      let displayWidth = CROP_WINDOW_SIZE;
+      let displayHeight = CROP_WINDOW_SIZE;
+
+      if (imageRatio > 1) {
+        // Imagem deitada (Paisagem) -> Altura vira o tamanho do quadrado, largura estica proporcionalmente
+        displayWidth = CROP_WINDOW_SIZE * imageRatio;
+      } else {
+        // Imagem em pé (Retrato) -> Largura vira o tamanho do quadrado, altura estica proporcionalmente
+        displayHeight = CROP_WINDOW_SIZE / imageRatio;
+      }
+
+      setImageDimensions({ width: displayWidth, height: displayHeight });
+
       setRotation(0);
       setFlipX(false);
       setFlipY(false);
       setActiveStickers([]); 
-      setTempImage(result.assets[0]);
+      
+      imageScale.value = 1;
+      savedImageScale.value = 1;
+      imageOffset.value = { x: 0, y: 0 };
+      startImageOffset.value = { x: 0, y: 0 };
+
+      setTempImage(asset);
     }
   };
 
   const handleConfirm = async () => {
-    if (!tempImage) return;
+    if (!tempImage || !viewShotRef.current) return;
     setLoading(true);
 
     try {
-      const displayWidth = CROP_WINDOW_SIZE * 2;
-      const displayHeight = CROP_WINDOW_SIZE * 2;
-      const scaleX = tempImage.width / displayWidth;
-      const scaleY = tempImage.height / displayHeight;
+      const mergedImageUri = await viewShotRef.current?.capture();
 
-      const cropX = (scrollOffset.current.x * scaleX) / currentZoom.current;
-      const cropY = (scrollOffset.current.y * scaleY) / currentZoom.current;
-      const cropWidth = (CROP_WINDOW_SIZE * scaleX) / currentZoom.current;
-      const cropHeight = (CROP_WINDOW_SIZE * scaleY) / currentZoom.current;
-
-      const actions: ImageManipulator.Action[] = [];
-      if (rotation !== 0) actions.push({ rotate: rotation });
-      if (flipX) actions.push({ flip: ImageManipulator.FlipType.Horizontal });
-      if (flipY) actions.push({ flip: ImageManipulator.FlipType.Vertical });
-      
-      actions.push({
-        crop: { originX: cropX, originY: cropY, width: cropWidth, height: cropHeight },
-      });
+      if (!mergedImageUri) {
+        Alert.alert("Erro", "Não foi possível capturar a imagem da tela.");
+        setLoading(false);
+        return;
+      }
 
       const manipResult = await ImageManipulator.manipulateAsync(
-        tempImage.uri,
-        actions,
+        mergedImageUri,
+        [], 
         { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
       );
 
       setConfirmedImage(manipResult.uri);
       setTempImage(null); 
     } catch (e) {
-      Alert.alert("Erro", "Não foi possível processar a imagem.");
+      Alert.alert("Erro", "Não foi possível processar os stickers na imagem.");
     } finally {
       setLoading(false);
     }
   };
+
+  const imageDragGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      imageOffset.value = {
+        x: e.translationX + startImageOffset.value.x,
+        y: e.translationY + startImageOffset.value.y,
+      };
+    })
+    .onEnd(() => {
+      startImageOffset.value = { x: imageOffset.value.x, y: imageOffset.value.y };
+    });
+
+  const imagePinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      imageScale.value = Math.max(1, savedImageScale.value * e.scale);
+    })
+    .onEnd(() => {
+      savedImageScale.value = imageScale.value;
+    });
+
+  const imageGestureCombined = Gesture.Simultaneous(imageDragGesture, imagePinchGesture);
+
+  const animatedImageStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: imageOffset.value.x },
+        { translateY: imageOffset.value.y },
+        { scale: imageScale.value },
+        { rotate: `${rotation}deg` },
+        { scaleX: flipX ? -1 : 1 },
+        { scaleY: flipY ? -1 : 1 },
+      ],
+    };
+  });
 
   const addStickerToPhoto = (source: any) => {
     setActiveStickers((prev) => [...prev, { id: String(Date.now()), source }]);
@@ -108,92 +172,84 @@ export default function ImageTest() {
   return (
     <LinearGradient colors={["#FAE6C9", "#ebcea2", "#D1AD72"]} style={styles.container}>
       
-      {tempImage ? (
-        <View style={[styles.editContainer, { width: screenWidth, height: screenHeight }]}>
-          <Text style={styles.previewTitle}>Personalize sua Foto</Text>
-          
-          <View style={[styles.cropWindow, { width: CROP_WINDOW_SIZE, height: CROP_WINDOW_SIZE }]}>
-            
-            {/* MUDANÇA 3: Passamos a propriedade source direto (sem o { uri }) para as imagens locais */}
-            {activeStickers.map((sticker) => (
-              <EditableSticker key={sticker.id} source={sticker.source} size={75} />
-            ))}
-
-            <ScrollView
-              horizontal
-              maximumZoomScale={4}
-              minimumZoomScale={1}
-              showsHorizontalScrollIndicator={false}
-              showsVerticalScrollIndicator={false}
-              onScroll={(e) => {
-                scrollOffset.current = { x: e.nativeEvent.contentOffset.x, y: e.nativeEvent.contentOffset.y };
-                currentZoom.current = e.nativeEvent.zoomScale || 1;
-              }}
-              scrollEventThrottle={16}
-              contentContainerStyle={styles.centerScroll}
-            >
-              <ScrollView
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.centerScroll}
+      <Modal
+        visible={!!tempImage}
+        animationType="slide"
+        transparent={false}
+      >
+        {tempImage && (
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <View style={[styles.editContainer, { width: screenWidth, height: screenHeight }]}>
+              <Text style={styles.previewTitle}>Personalize sua Foto</Text>
+              
+              <ViewShot 
+                ref={viewShotRef} 
+                options={{ format: 'jpg', quality: 0.9 }}
+                style={[styles.cropWindow, { width: CROP_WINDOW_SIZE, height: CROP_WINDOW_SIZE }]}
               >
-                <Image 
-                  source={{ uri: tempImage.uri }} 
-                  style={{ 
-                    width: CROP_WINDOW_SIZE * 2, 
-                    height: CROP_WINDOW_SIZE * 2,
-                    transform: [{ rotate: `${rotation}deg` }, { scaleX: flipX ? -1 : 1 }, { scaleY: flipY ? -1 : 1 }] 
-                  }} 
-                  resizeMode="contain"
-                />
-              </ScrollView>
-            </ScrollView>
-            
-            <View style={styles.gridOverlay} pointerEvents="none" />
-          </View>
+                <View style={styles.centerImageContainer}>
+                  <GestureDetector gesture={imageGestureCombined}>
+                    <Animated.Image 
+                      source={{ uri: tempImage.uri }} 
+                      style={[
+                        { 
+                          width: imageDimensions.width,   // <--- AGORA É DINÂMICO
+                          height: imageDimensions.height, // <--- AGORA É DINÂMICO
+                        },
+                        animatedImageStyle
+                      ]} 
+                      resizeMode="contain" 
+                    />
+                  </GestureDetector>
+                </View>
 
-          <Text style={styles.instructions}>Arraste e use 2 dedos para ajustar os stickers</Text>
+                {activeStickers.map((sticker) => (
+                  <EditableSticker key={sticker.id} source={sticker.source} size={75} />
+                ))}
+              </ViewShot>
 
-          {/* GAVETA DE STICKERS DISPONÍVEIS */}
-          <Text style={styles.sectionTitle}>Toque para adicionar um Sticker:</Text>
-          <View style={styles.stickerDrawer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15 }}>
-              {/* MUDANÇA 4: Trocamos o AVAILABLE_STICKERS por LOCAL_STICKERS e removemos a chave uri do Image */}
-              {LOCAL_STICKERS.map((stk) => (
-                <TouchableOpacity key={stk.id} style={styles.stickerThumbContainer} onPress={() => addStickerToPhoto(stk.source)}>
-                  <Image source={stk.source} style={styles.stickerThumb} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              <Text style={styles.instructions}>Use dois dedos para zoom na imagem / Arraste os stickers</Text>
 
-          <View style={styles.toolbar}>
-            <ToolButton icon="reload" label="Girar 90°" onPress={() => setRotation((p) => (p + 90) % 360)} />
-            <ToolButton icon="swap-horizontal" label="Inverter H" onPress={() => setFlipX(!flipX)} />
-            <ToolButton icon="swap-vertical" label="Inverter V" onPress={() => setFlipY(!flipY)} />
-            <ToolButton icon="trash-outline" label="Limpar" onPress={() => setActiveStickers([])} />
-          </View>
+              <Text style={styles.sectionTitle}>Toque para adicionar um Sticker:</Text>
+              <View style={styles.stickerDrawer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 15 }}>
+                  {LOCAL_STICKERS.map((stk) => (
+                    <TouchableOpacity key={stk.id} style={styles.stickerThumbContainer} onPress={() => addStickerToPhoto(stk.source)}>
+                      <Image source={stk.source} style={styles.stickerThumb} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
 
-          <View style={styles.actionButtons}>
-            <Button label={loading ? "Salvando..." : "Confirmar"} onPress={handleConfirm} style={{ backgroundColor: '#2E78D6', width: screenWidth * 0.4 }} />
-            <Button label="Cancelar" onPress={() => setTempImage(null)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: screenWidth * 0.4, marginLeft: 15 }} />
-          </View>
-        </View>
-      ) : (
-        <View style={styles.mainBox}>
-          <View style={styles.imageContainer}>
-            {confirmedImage ? (
-              <Image source={{ uri: confirmedImage }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.placeholder]} />
-            )}
-          </View>
-          <Button label="Escolher Foto da Galeria" onPress={pickImage} />
-          {confirmedImage && (
-            <Button label="Remover Foto" onPress={() => setConfirmedImage(null)} style={{ backgroundColor: '#ff4444', marginTop: 10 }} />
+              <View style={styles.toolbar}>
+                <ToolButton icon="reload" label="Girar 90°" onPress={() => setRotation((p) => (p + 90) % 360)} />
+                <ToolButton icon="swap-horizontal" label="Inverter H" onPress={() => setFlipX(!flipX)} />
+                <ToolButton icon="swap-vertical" label="Inverter V" onPress={() => setFlipY(!flipY)} />
+                <ToolButton icon="trash-outline" label="Limpar" onPress={() => setActiveStickers([])} />
+              </View>
+
+              <View style={styles.actionButtons}>
+                <Button label={loading ? "Salvando..." : "Confirmar"} onPress={handleConfirm} style={{ backgroundColor: '#2E78D6', width: screenWidth * 0.4 }} />
+                <Button label="Cancelar" onPress={() => setTempImage(null)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: screenWidth * 0.4, marginLeft: 15 }} />
+              </View>
+            </View>
+          </GestureHandlerRootView>
+        )}
+      </Modal>
+
+      <View style={styles.mainBox}>
+        <View style={styles.imageContainer}>
+          {confirmedImage ? (
+            <Image source={{ uri: confirmedImage }} style={styles.image} />
+          ) : (
+            <View style={[styles.image, styles.placeholder]} />
           )}
         </View>
-      )}
+        <Button label="Escolher Foto da Galeria" onPress={pickImage} />
+        {confirmedImage && (
+          <Button label="Remover Foto" onPress={() => setConfirmedImage(null)} style={{ backgroundColor: '#ff4444', marginTop: 10 }} />
+        )}
+      </View>
     </LinearGradient>
   );
 }
@@ -201,12 +257,11 @@ export default function ImageTest() {
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   mainBox: { alignItems: 'center' },
-  editContainer: { backgroundColor: '#1a1a1a', paddingTop: 40, alignItems: 'center' },
+  editContainer: { backgroundColor: '#1a1a1a', paddingTop: 50, alignItems: 'center', flex: 1 }, 
   previewTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#fff' },
   instructions: { fontSize: 11, color: '#aaa', marginTop: 8, textAlign: 'center' },
-  centerScroll: { alignItems: 'center', justifyContent: 'center' },
   cropWindow: { borderRadius: 8, overflow: 'hidden', backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', position: 'relative' },
-  gridOverlay: { ...StyleSheet.absoluteFillObject, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' },
+  centerImageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' }, // <--- CENTRALIZA A MÍDIA RETANGULAR
   sectionTitle: { color: '#ccc', fontSize: 13, marginTop: 20, alignSelf: 'flex-start', marginLeft: '8%', fontWeight: '600' },
   stickerDrawer: { width: '85%', height: 75, marginTop: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 10, justifyContent: 'center' },
   stickerThumbContainer: { width: 55, height: 55, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
@@ -216,6 +271,6 @@ const styles = StyleSheet.create({
   toolLabel: { fontSize: 10, color: '#ccc', marginTop: 4 },
   actionButtons: { flexDirection: 'row', marginTop: 'auto', marginBottom: 35, width: '100%', justifyContent: 'center' },
   imageContainer: { marginBottom: 20 },
-  image: { width: 200, height: 200, borderRadius: 100, borderWidth: 3, borderColor: '#fff' },
-  placeholder: { backgroundColor: 'rgba(0,0,0,0.1)', borderStyle: 'dashed', borderWidth: 2, borderColor: '#aaa' },
+  image: { width: 350, height: 350, borderRadius: 12, borderWidth: 3, borderColor: '#fff' },
+  placeholder: { backgroundColor: 'rgba(0,0,0,0.1)', borderStyle: 'solid', borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 12 },
 });

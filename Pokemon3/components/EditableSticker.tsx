@@ -77,6 +77,8 @@ export default function EditableSticker({ source, size = 100 }: StickerProps) {
 const styles = StyleSheet.create({
   stickerContainer: {
     position: 'absolute',
+    top: 0,
+    left: 0,
     zIndex: 10,
     justifyContent: 'center',
     alignItems: 'center',
