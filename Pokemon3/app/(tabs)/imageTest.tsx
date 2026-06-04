@@ -34,7 +34,6 @@ export default function ImageTest() {
   const [activeStickers, setActiveStickers] = useState<{ id: string; source: any }[]>([]);
   const CROP_WINDOW_SIZE = screenWidth * 0.85;
 
-  // --- NOVOS ESTADOS PARA AS DIMENSÕES DINÂMICAS DA IMAGEM ---
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   
   const viewShotRef = useRef<any>(null);
@@ -66,17 +65,13 @@ export default function ImageTest() {
     if (!result.canceled) {
       const asset = result.assets[0];
 
-      // CÁLCULO DE PROPORÇÃO DA IMAGEM (Aspect Ratio)
-      // Faz com que o menor lado da foto preencha o tamanho do container perfeitamente.
       const imageRatio = asset.width / asset.height;
       let displayWidth = CROP_WINDOW_SIZE;
       let displayHeight = CROP_WINDOW_SIZE;
 
       if (imageRatio > 1) {
-        // Imagem deitada (Paisagem) -> Altura vira o tamanho do quadrado, largura estica proporcionalmente
         displayWidth = CROP_WINDOW_SIZE * imageRatio;
       } else {
-        // Imagem em pé (Retrato) -> Largura vira o tamanho do quadrado, altura estica proporcionalmente
         displayHeight = CROP_WINDOW_SIZE / imageRatio;
       }
 
@@ -193,8 +188,8 @@ export default function ImageTest() {
                       source={{ uri: tempImage.uri }} 
                       style={[
                         { 
-                          width: imageDimensions.width,   // <--- AGORA É DINÂMICO
-                          height: imageDimensions.height, // <--- AGORA É DINÂMICO
+                          width: imageDimensions.width,
+                          height: imageDimensions.height,
                         },
                         animatedImageStyle
                       ]} 
