@@ -39,7 +39,14 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permita que o aplicativo salve as fotos editadas com stickers na sua galeria.",
+          "savePhotosPermission": "Permita que o aplicativo salve as fotos editadas com stickers na sua galeria."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

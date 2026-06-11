@@ -8,6 +8,11 @@ import { useNavigation } from 'expo-router';
 import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// AJUSTE DE IMPORTAÇÃO COMPATÍVEL COM O TYPESCRIPT
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
+
 import Button from '@/components/Button'; 
 import EditableSticker from '@/components/EditableSticker';
 
@@ -43,6 +48,8 @@ export default function ImageTest() {
   const imageOffset = useSharedValue({ x: 0, y: 0 });
   const startImageOffset = useSharedValue({ x: 0, y: 0 });
 
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: !tempImage, 
@@ -52,7 +59,7 @@ export default function ImageTest() {
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert("Permissão necessária", "Permita o acesso à galeria.");
+      Alert.alert("Permissão necessária", "Permita o acesso à galeria para escolher uma foto.");
       return;
     }
 
@@ -116,6 +123,35 @@ export default function ImageTest() {
       Alert.alert("Erro", "Não foi possível processar os stickers na imagem.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveToGallery = async () => {
+    if (!confirmedImage) return;
+
+    try {
+      const filename = `pokemon_sticker_${Date.now()}.jpg`;
+      
+      // Agora o autocomplete e a tipagem voltam a funcionar normalmente
+      const baseDir = FileSystem.documentDirectory;
+      const safeUri = `${baseDir}${filename}`;
+
+      // Executa a cópia sem disparar o aviso ou erro de depreciação
+      await FileSystem.copyAsync({
+        from: confirmedImage,
+        to: safeUri
+      });
+
+      // Salva na galeria pública
+      await MediaLibrary.saveToLibraryAsync(safeUri);
+      
+      Alert.alert("Sucesso!", "A imagem com os stickers foi salva na sua galeria!");
+    } catch (error) {
+      console.error("Erro completo ao salvar:", error);
+      Alert.alert(
+        "Erro ao Salvar", 
+        "Não foi possível gravar a imagem na galeria."
+      );
     }
   };
 
@@ -240,9 +276,15 @@ export default function ImageTest() {
             <View style={[styles.image, styles.placeholder]} />
           )}
         </View>
+        
+        {/* BOTÕES DA TELA PRINCIPAL */}
         <Button label="Escolher Foto da Galeria" onPress={pickImage} />
+        
         {confirmedImage && (
-          <Button label="Remover Foto" onPress={() => setConfirmedImage(null)} style={{ backgroundColor: '#ff4444', marginTop: 10 }} />
+          <>
+            <Button label="Salvar na Galeria" onPress={handleSaveToGallery} style={{ backgroundColor: '#28a745', marginTop: 10 }} />
+            <Button label="Remover Foto" onPress={() => setConfirmedImage(null)} style={{ backgroundColor: '#ff4444', marginTop: 10 }} />
+          </>
         )}
       </View>
     </LinearGradient>
@@ -256,7 +298,7 @@ const styles = StyleSheet.create({
   previewTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#fff' },
   instructions: { fontSize: 11, color: '#aaa', marginTop: 8, textAlign: 'center' },
   cropWindow: { borderRadius: 8, overflow: 'hidden', backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', position: 'relative' },
-  centerImageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' }, // <--- CENTRALIZA A MÍDIA RETANGULAR
+  centerImageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   sectionTitle: { color: '#ccc', fontSize: 13, marginTop: 20, alignSelf: 'flex-start', marginLeft: '8%', fontWeight: '600' },
   stickerDrawer: { width: '85%', height: 75, marginTop: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 10, justifyContent: 'center' },
   stickerThumbContainer: { width: 55, height: 55, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
