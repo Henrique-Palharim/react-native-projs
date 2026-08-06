@@ -9,7 +9,6 @@ import { GestureHandlerRootView, Gesture, GestureDetector } from 'react-native-g
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// AJUSTE DE IMPORTAÇÃO COMPATÍVEL COM O TYPESCRIPT
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 
@@ -56,6 +55,33 @@ export default function ImageTest() {
     });
   }, [tempImage, navigation]);
 
+  // função para processar a imagem escolhida/tirada
+  const processCapturedAsset = (asset: ImagePicker.ImagePickerAsset) => {
+    const imageRatio = asset.width / asset.height;
+    let displayWidth = CROP_WINDOW_SIZE;
+    let displayHeight = CROP_WINDOW_SIZE;
+
+    if (imageRatio > 1) {
+      displayWidth = CROP_WINDOW_SIZE * imageRatio;
+    } else {
+      displayHeight = CROP_WINDOW_SIZE / imageRatio;
+    }
+
+    setImageDimensions({ width: displayWidth, height: displayHeight });
+
+    setRotation(0);
+    setFlipX(false);
+    setFlipY(false);
+    setActiveStickers([]); 
+    
+    imageScale.value = 1;
+    savedImageScale.value = 1;
+    imageOffset.value = { x: 0, y: 0 };
+    startImageOffset.value = { x: 0, y: 0 };
+
+    setTempImage(asset);
+  };
+
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
@@ -70,31 +96,25 @@ export default function ImageTest() {
     });
 
     if (!result.canceled) {
-      const asset = result.assets[0];
+      processCapturedAsset(result.assets[0]);
+    }
+  };
 
-      const imageRatio = asset.width / asset.height;
-      let displayWidth = CROP_WINDOW_SIZE;
-      let displayHeight = CROP_WINDOW_SIZE;
+  // função para tirar foto com a câmera
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Permissão necessária", "Permita o acesso à câmera para tirar uma foto.");
+      return;
+    }
 
-      if (imageRatio > 1) {
-        displayWidth = CROP_WINDOW_SIZE * imageRatio;
-      } else {
-        displayHeight = CROP_WINDOW_SIZE / imageRatio;
-      }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 1,
+    });
 
-      setImageDimensions({ width: displayWidth, height: displayHeight });
-
-      setRotation(0);
-      setFlipX(false);
-      setFlipY(false);
-      setActiveStickers([]); 
-      
-      imageScale.value = 1;
-      savedImageScale.value = 1;
-      imageOffset.value = { x: 0, y: 0 };
-      startImageOffset.value = { x: 0, y: 0 };
-
-      setTempImage(asset);
+    if (!result.canceled) {
+      processCapturedAsset(result.assets[0]);
     }
   };
 
@@ -132,17 +152,14 @@ export default function ImageTest() {
     try {
       const filename = `pokemon_sticker_${Date.now()}.jpg`;
       
-      // Agora o autocomplete e a tipagem voltam a funcionar normalmente
       const baseDir = FileSystem.documentDirectory;
       const safeUri = `${baseDir}${filename}`;
 
-      // Executa a cópia sem disparar o aviso ou erro de depreciação
       await FileSystem.copyAsync({
         from: confirmedImage,
         to: safeUri
       });
 
-      // Salva na galeria pública
       await MediaLibrary.saveToLibraryAsync(safeUri);
       
       Alert.alert("Sucesso!", "A imagem com os stickers foi salva na sua galeria!");
@@ -277,14 +294,25 @@ export default function ImageTest() {
           )}
         </View>
         
-        {/* BOTÕES DA TELA PRINCIPAL */}
-        <Button label="Escolher Foto da Galeria" onPress={pickImage} />
+        {/* boões lado a lado */}
+        <View style={styles.pickerButtonsRow}>
+          <Button 
+            label="Galeria" 
+            onPress={pickImage} 
+            style={styles.halfButton} 
+          />
+          <Button 
+            label="Tirar Foto" 
+            onPress={takePhoto} 
+            style={[styles.halfButton, { backgroundColor: '#2E78D6' }]} 
+          />
+        </View>
         
         {confirmedImage && (
-          <>
+          <View style={styles.actionGroup}>
             <Button label="Salvar na Galeria" onPress={handleSaveToGallery} style={{ backgroundColor: '#28a745', marginTop: 10 }} />
             <Button label="Remover Foto" onPress={() => setConfirmedImage(null)} style={{ backgroundColor: '#ff4444', marginTop: 10 }} />
-          </>
+          </View>
         )}
       </View>
     </LinearGradient>
@@ -293,7 +321,10 @@ export default function ImageTest() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  mainBox: { alignItems: 'center' },
+  mainBox: { alignItems: 'center', width: '100%', paddingHorizontal: 20 },
+  pickerButtonsRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, width: 350 },
+  halfButton: { flex: 1 },
+  actionGroup: { width: 350 },
   editContainer: { backgroundColor: '#1a1a1a', paddingTop: 50, alignItems: 'center', flex: 1 }, 
   previewTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15, color: '#fff' },
   instructions: { fontSize: 11, color: '#aaa', marginTop: 8, textAlign: 'center' },
