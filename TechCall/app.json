@@ -2,6 +2,14 @@
   "expo": {
     "name": "TechCall",
     "slug": "TechCall",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permita o acesso à localização para registrar o local do chamado."
+        }
+      ]
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,11 +33,6 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    },
-    "plugins": {
-      {
-        "expo-location",
-      }
     }
   }
 }

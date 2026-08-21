@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 
 export default function NewCallScreen() {
-  
   const [description, setDescription] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
   async function handleTakePhoto() {
-    
     const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
@@ -50,6 +51,45 @@ export default function NewCallScreen() {
 
     if (!result.canceled) {
       setPhotoUri(result.assets[0].uri);
+    }
+  }
+
+  async function handleGetLocation() {
+    const permission = await Location.requestForegroundPermissionsAsync();
+  
+    if (!permission.granted) {
+      Alert.alert('Permissão negada', 'Precisamos da localização para o check-in.');
+      return;
+    }
+  
+    setLoadingLocation(true);
+  
+    try {
+      const gpsAtivo = await Location.hasServicesEnabledAsync();
+      if (!gpsAtivo) {
+        Alert.alert('GPS desligado', 'Ative a localização do aparelho e tente novamente.');
+        return;
+      }
+  
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+  
+      const [local] = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+  
+      if (local) {
+        const enderecoFormatado = `${local.street ?? 'Endereço não identificado'}, ${local.city ?? ''} - ${local.region ?? ''}`;
+        setAddress(enderecoFormatado);
+      } else {
+        setAddress('Endereço não encontrado para esta coordenada.');
+      }
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível obter a localização. Tente novamente.');
+    } finally {
+      setLoadingLocation(false);
     }
   }
 
@@ -112,6 +152,28 @@ export default function NewCallScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* --- TRECHO INSERIDO AQUI --- */}
+      <Text style={styles.label}>Localização do chamado</Text>
+      
+      {loadingLocation ? (
+        <Text style={styles.placeholderText}>Buscando localização...</Text>
+      ) : address ? (
+        <Text style={styles.addressText}>{address}</Text>
+      ) : (
+        <Text style={styles.placeholderText}>Nenhuma localização registrada</Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.button, styles.locationButton]}
+        onPress={handleGetLocation}
+        disabled={loadingLocation}
+      >
+        <Text style={styles.buttonText}>
+          {loadingLocation ? 'Buscando...' : 'Registrar localização'}
+        </Text>
+      </TouchableOpacity>
+      {/* ---------------------------- */}
+
       <TouchableOpacity
         style={[
           styles.button,
@@ -139,7 +201,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, backgroundColor: '#fff', padding: 12, minHeight: 80, textAlignVertical: 'top' },
   placeholder: { height: 160, borderRadius: 8, borderWidth: 1, borderColor: '#ccc', borderStyle: 'dashed', backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: '#999' },
+  placeholderText: { color: '#999', marginVertical: 4 },
   photo: { width: '100%', height: 200, borderRadius: 8 },
   removeButton: { marginTop: 8, alignItems: 'center' },
   removeButtonText: { color: '#d32f2f', fontWeight: 'bold' },
@@ -147,7 +209,9 @@ const styles = StyleSheet.create({
   button: { flex: 1, borderRadius: 8, padding: 14, alignItems: 'center' },
   cameraButton: { backgroundColor: '#1565c0' },
   galleryButton: { backgroundColor: '#6a1b9a' },
-  confirmButton: { backgroundColor: '#2e7d32', marginTop: 20 },
+  confirmButton: { backgroundColor: '#2e7d32', marginTop: 24 },
   disabledButton: { backgroundColor: '#a5d6a7' },
   buttonText: { color: '#fff', fontWeight: 'bold' },
+  addressText: { fontSize: 14, color: '#333', marginBottom: 8 },
+  locationButton: { backgroundColor: '#00695c', marginBottom: 16 },
 });
