@@ -1,9 +1,23 @@
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
+import { collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
+
+// tempo limite do SLA em segundos (10 segundos para testes em sala)
+const SLA_SECONDS = 10;
 
 export default function NewCallScreen({ navigation }: any) {
   const [description, setDescription] = useState('');
@@ -77,7 +91,7 @@ export default function NewCallScreen({ navigation }: any) {
     }
   }
 
-  // GRAVAÇÃO NO FIRESTORE
+  // GRAVAÇÃO NO FIRESTORE + NOTIFICAÇÃO DE SLA
   async function handleCreateCall() {
     if (!description.trim()) {
       Alert.alert('Atenção', 'Preencha a descrição do problema.');
@@ -86,13 +100,39 @@ export default function NewCallScreen({ navigation }: any) {
 
     try {
       setSaving(true);
-      await addDoc(collection(db, 'chamados'), {
+
+      // salva o novo chamado na coleção 'chamados'
+      const docRef = await addDoc(collection(db, 'chamados'), {
         description,
         photoUri,
         address,
         status: 'pendente',
         createdAt: serverTimestamp(),
       });
+
+      // pede permissão e agenda a notificação de alerta de SLA
+      const permission = await Notifications.requestPermissionsAsync();
+      if (permission.granted) {
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'TechCall — Alerta de SLA',
+            body: 'O prazo de atendimento de um chamado expirou!',
+            data: { chamadoId: docRef.id },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: SLA_SECONDS,
+          },
+        });
+
+        // grava o ID da notificação para que a tela de detalhes possa cancelá-la
+        await updateDoc(docRef, { slaNotificationId: notificationId });
+      } else {
+        Alert.alert(
+          'Permissão de Notificação Negada',
+          'Você não receberá alertas de SLA. Para ativar, habilite nas configurações do seu celular.'
+        );
+      }
 
       Alert.alert('Sucesso', 'Chamado registrado com sucesso!');
       navigation.goBack();

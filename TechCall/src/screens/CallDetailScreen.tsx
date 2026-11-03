@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications'; // importação das Notificações
 import { db } from '../firebase/config';
 
 interface CallDetails {
@@ -19,6 +20,7 @@ interface CallDetails {
   photoUri?: string;
   address?: string;
   status: 'pendente' | 'atendendo' | 'concluido' | 'cancelado';
+  slaNotificationId?: string; // ID da notificação agendada
 }
 
 export default function CallDetailScreen() {
@@ -30,39 +32,27 @@ export default function CallDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  // busca os dados de um documento no Firestore pelo chamadoId
+  // busca o documento único no Firestore pelo chamadoId
   async function fetchCallDetails() {
     try {
       setLoading(true);
-
-      // Validação de segurança do ID recebido via parâmetros
       if (!chamadoId) {
-        Alert.alert('Erro', 'ID do chamado inválido.');
+        Alert.alert('Erro', 'ID do chamado não fornecido.');
         navigation.goBack();
         return;
       }
 
-      // Busca o documento na coleção 'chamados'
       const docRef = doc(db, 'chamados', chamadoId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        const data = docSnap.data();
-
-        // Mapeamento garantindo fallback caso algum campo tenha nome ligeiramente diferente
-        setCall({
-          id: docSnap.id,
-          description: data.description || data.descricao || '',
-          photoUri: data.photoUri || data.fotoUrl || null,
-          address: data.address || data.endereco || null,
-          status: data.status || 'pendente',
-        });
+        setCall({ id: docSnap.id, ...docSnap.data() } as CallDetails);
       } else {
-        Alert.alert('Erro', 'Chamado não encontrado no banco de dados.');
+        Alert.alert('Erro', 'Chamado não encontrado.');
         navigation.goBack();
       }
     } catch (error) {
-      console.error('Erro ao buscar chamado:', error);
+      console.error(error);
       Alert.alert('Erro', 'Não foi possível carregar o chamado.');
     } finally {
       setLoading(false);
@@ -73,36 +63,46 @@ export default function CallDetailScreen() {
     fetchCallDetails();
   }, [chamadoId]);
 
-  // função para atualizar o status do chamado no Firestore
+  // atualiza o status e cancela o alerta de SLA se for atendido ou cancelado a tempo
   async function handleUpdateStatus(newStatus: 'atendendo' | 'concluido' | 'cancelado') {
     try {
       setUpdating(true);
       const docRef = doc(db, 'chamados', chamadoId);
 
+      // 1. atualiza o status no banco de dados
       await updateDoc(docRef, { status: newStatus });
 
-      // Atualiza o estado local imediatamente sem recarregar a tela
+      // 2. se o chamado foi atendido ou cancelado a tempo, cancela a notificação agendada
+      if (
+        (newStatus === 'atendendo' || newStatus === 'cancelado') &&
+        call?.slaNotificationId
+      ) {
+        await Notifications.cancelScheduledNotificationAsync(call.slaNotificationId);
+      }
+
+      // 3. atualiza o estado local para refletir na tela imediatamente
       setCall((prev) => (prev ? { ...prev, status: newStatus } : null));
 
       Alert.alert('Sucesso', `Status alterado para: ${newStatus}`);
     } catch (error) {
+      console.error(error);
       Alert.alert('Erro', 'Não foi possível atualizar o status do chamado.');
     } finally {
       setUpdating(false);
     }
   }
 
-  // badges de status
+  // estilização dinâmica para o status
   function getStatusStyle(status: string) {
     switch (status) {
       case 'atendendo':
         return { bg: '#fff3e0', text: '#e65100', label: 'Em Atendimento' };
       case 'concluido':
-        return { bg: '#e8f5e9', text: '#2e7d32', label: 'Concluído' };
+        return { bg: '#e3f2fd', text: '#1565c0', label: 'Concluído' };
       case 'cancelado':
         return { bg: '#ffebee', text: '#c62828', label: 'Cancelado' };
       default:
-        return { bg: '#e3f2fd', text: '#1565c0', label: 'Pendente' };
+        return { bg: '#e0f2f1', text: '#00695c', label: 'Pendente' };
     }
   }
 
@@ -162,15 +162,29 @@ export default function CallDetailScreen() {
       ) : (
         <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={[styles.button, styles.attendButton, call.status === 'atendendo' && styles.disabledButton]}
-            disabled={call.status === 'atendendo' || call.status === 'concluido' || call.status === 'cancelado'}
+            style={[
+              styles.button,
+              styles.attendButton,
+              (call.status === 'atendendo' || call.status === 'concluido' || call.status === 'cancelado') &&
+                styles.disabledButton,
+            ]}
+            disabled={
+              call.status === 'atendendo' ||
+              call.status === 'concluido' ||
+              call.status === 'cancelado'
+            }
             onPress={() => handleUpdateStatus('atendendo')}
           >
             <Text style={styles.buttonText}>Iniciar Atendimento</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.completeButton, call.status === 'concluido' && styles.disabledButton]}
+            style={[
+              styles.button,
+              styles.completeButton,
+              (call.status === 'concluido' || call.status === 'cancelado') &&
+                styles.disabledButton,
+            ]}
             disabled={call.status === 'concluido' || call.status === 'cancelado'}
             onPress={() => handleUpdateStatus('concluido')}
           >
@@ -178,7 +192,12 @@ export default function CallDetailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, styles.cancelButton, call.status === 'cancelado' && styles.disabledButton]}
+            style={[
+              styles.button,
+              styles.cancelButton,
+              (call.status === 'cancelado' || call.status === 'concluido') &&
+                styles.disabledButton,
+            ]}
             disabled={call.status === 'cancelado' || call.status === 'concluido'}
             onPress={() => handleUpdateStatus('cancelado')}
           >
@@ -208,7 +227,7 @@ const styles = StyleSheet.create({
   actionsContainer: { gap: 10, marginTop: 4 },
   button: { borderRadius: 8, padding: 14, alignItems: 'center' },
   attendButton: { backgroundColor: '#e65100' },
-  completeButton: { backgroundColor: '#2e7d32' },
+  completeButton: { backgroundColor: '#1565c0' },
   cancelButton: { backgroundColor: '#c62828' },
   disabledButton: { opacity: 0.5 },
   buttonText: { color: '#fff', fontWeight: 'bold' },
